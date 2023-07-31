@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:azure-service-bus-messaging="http://www.mulesoft.org/schema/mule/azure-service-bus-messaging"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/azure-service-bus-messaging http://www.mulesoft.org/schema/mule/azure-service-bus-messaging/current/mule-azure-service-bus-messaging.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="get-simple" doc:id="8cdbd6e6-c01e-4fe3-aa48-29d7b4a9086e" >
+		<http:listener doc:name="GET /simple" doc:id="0c4cf5e6-4113-4f34-a6c5-5b054e12e629" config-ref="HTTP_Listener_config" path="/simple" />
+		<azure-service-bus-messaging:send destinationName="queue1" doc:name="Send queue" doc:id="8eb632cf-4ad8-44cc-aab8-06a2a8ef38f4" config-ref="Azure_Service_Bus_Messaging_Connector_Config" >
+			<azure-service-bus-messaging:body ><![CDATA[#[output application/json
+---
+{
+	id: correlationId,
+	message: "bella zio"
+}]]]></azure-service-bus-messaging:body>
+		</azure-service-bus-messaging:send>
+		<logger level="INFO" doc:name="Logger" doc:id="816fd074-304d-44f8-8dc0-6e99648ee461" message='#[output application/json&#10;---&#10;{&#10;	message: "sent",&#10;	corr: correlationId&#10;}]' />
+		<ee:transform doc:name="Transform Message" doc:id="8b1cbe7c-1b76-49fa-88d7-e06116f7bb33" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "Ok",
+	cor: correlationId,
+	pay : payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="sbus-simple" doc:id="d829f0ad-7ee4-47c4-9036-2287f9a47844" >
+		<azure-service-bus-messaging:message-listener ackMode="AUTO" destinationName="queue1" doc:name="Message listener" doc:id="9f9c5230-2fce-4414-9cfe-6f6168b8617d" config-ref="Azure_Service_Bus_Messaging_Connector_Config" />
+		<logger level="INFO" doc:name="Logger" doc:id="93f9f7da-cd90-4247-b472-33d6e1fbdaa1" message='#[output application/json&#10;---&#10;{&#10;	&#10;	flow: "flow1",&#10;	message: "received " ++ (payload.id default "")&#10;}]' />
+	</flow>
+</mule>

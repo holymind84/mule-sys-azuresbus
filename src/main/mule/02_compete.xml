@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:azure-service-bus-messaging="http://www.mulesoft.org/schema/mule/azure-service-bus-messaging"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/azure-service-bus-messaging http://www.mulesoft.org/schema/mule/azure-service-bus-messaging/current/mule-azure-service-bus-messaging.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="get-compete" doc:id="3f35f83b-fcc3-4c4d-829a-eaf08d3388c3" >
+		<http:listener doc:name="GET /compete" doc:id="c19ccc4f-194a-40c6-9357-abeff483b3f7" config-ref="HTTP_Listener_config" path="/compete" />
+		<azure-service-bus-messaging:send destinationName="queue1" doc:name="Send queue" doc:id="983d7a93-c4fa-4897-8094-e249ea0f6a3d" config-ref="Azure_Service_Bus_Messaging_Connector_Config" >
+			<azure-service-bus-messaging:body ><![CDATA[#[output application/json
+---
+{
+	id: correlationId,
+	message: "bella zio"
+}]]]></azure-service-bus-messaging:body>
+		</azure-service-bus-messaging:send>
+		<logger level="INFO" doc:name="Logger" doc:id="5012a398-1a8a-4d3d-98db-666e30f78552" message='#[output application/json&#10;---&#10;{&#10;	message: "sent",&#10;	corr: correlationId&#10;}]' />
+		<ee:transform doc:name="Transform Message" doc:id="226a9b5c-93a1-40e0-8736-b49f2d7f6756" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "Ok",
+	cor: correlationId,
+	pay : payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="sbus-compete1" doc:id="94da1172-c3a7-4b58-bf8c-414b1a436ccf" >
+		<azure-service-bus-messaging:message-listener ackMode="AUTO" destinationName="queue1" doc:name="Message listener " doc:id="ff060c10-011c-47f8-bd31-18f9d34f0fb9" config-ref="Azure_Service_Bus_Messaging_Connector_Config" />
+		<logger level="INFO" doc:name="Logger" doc:id="ee8dd494-5d8b-495d-b84b-b96e567c2307" message='#[output application/json&#10;---&#10;{&#10;	&#10;	flow: "sbus-compete1",&#10;	message: "received " ++ (payload.id default "")&#10;}]' />
+	</flow>
+	<flow name="sbus-compete2" doc:id="3a0f1404-7fcf-448c-a84b-e4c8dd1e4bc1" >
+		<azure-service-bus-messaging:message-listener ackMode="AUTO" destinationName="queue1" doc:name="Message listener" doc:id="39e97013-1154-4477-b863-d67ecbbae9e1" config-ref="Azure_Service_Bus_Messaging_Connector_Config" />
+		<logger level="INFO" doc:name="Logger" doc:id="83c4dc6a-9fe1-4106-bb1c-9c1b8ac0849b" message='#[output application/json&#10;---&#10;{&#10;	&#10;	flow: "sbus-compete2",&#10;	message: "received " ++ (payload.id default "")&#10;}]' />
+	</flow>
+</mule>
